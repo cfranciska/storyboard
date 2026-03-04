@@ -561,7 +561,7 @@ Campaign: {campaign}
             st.json(st.session_state["creative_spec_json"])
 
 # ======================================
-# TAB 2 — STORYLINE GENERATOR
+# TAB 2 — STORYLINE GENERATOR (FINAL STABLE VERSIONED)
 # ======================================
 
 with tab2:
@@ -574,30 +574,36 @@ with tab2:
     )
 
     character_traits = st.text_area("Character Traits")
-
-    # Keep image upload for UI reference only
     st.file_uploader("Upload Product Image", type=["png", "jpg", "jpeg"])
 
     num_stories = st.number_input("Number of Stories", 1, 10, 1)
     shots_per_story = st.number_input("Number of Shots Per Story", 1, 20, 8)
+
     duration_each = st.selectbox(
-    "Duration Each Story",
-    options=["10 sec", "15 sec", "20 sec"],
-    index=2  # default = 20 sec
+        "Duration Each Story",
+        options=["10 sec", "15 sec", "20 sec"],
+        index=2
     )
+
     language = st.selectbox(
-    "Language",
-    options=["Indonesian", "English"],
-    index=0
+        "Language",
+        options=["Indonesian", "English"],
+        index=0
     )
+
     vo_language = st.selectbox(
-    "VO & On-Screen Text Language",
-    options=["Indonesian", "English"],
-    index=0
+        "VO & On-Screen Text Language",
+        options=["Indonesian", "English"],
+        index=0
     )
+
     other_info = st.text_area("Creative Direction")
 
-    if st.button("Generate Storyline", key="generate_storyline_btn"):
+    # ======================================
+    # GENERATE STORYLINE
+    # ======================================
+
+    if st.button("Generate Storyline"):
 
         with st.spinner("Generating Storyline..."):
 
@@ -624,42 +630,30 @@ Requirements:
 
             try:
                 parsed = json.loads(output)
-                st.session_state["storyline_versions"] = [parsed]
-                st.session_state["active_version_index"] = 0
-            except:
-                st.error("Model did not return valid JSON. Please regenerate.")
-                st.stop()
+            except json.JSONDecodeError:
+                cleaned = output.replace("```json", "").replace("```", "").strip()
+                try:
+                    parsed = json.loads(cleaned)
+                except:
+                    st.error("Model did not return valid JSON.")
+                    st.code(output)
+                    st.stop()
+
+            # Reset version history
+            st.session_state["storyline_versions"] = [parsed]
+            st.rerun()
+
+    # ======================================
+    # DISPLAY + DOWNLOAD
+    # ======================================
 
     if "storyline_versions" in st.session_state:
 
         versions = st.session_state["storyline_versions"]
-        active_index = st.session_state["active_version_index"]
 
-        # ==============================
-        # STEP 3 — VERSION SELECTOR HERE
-        # ==============================
-
-        version_labels = [
-            f"Version {i+1}" for i in range(len(versions))
-        ]
-
-        if "active_version_index" not in st.session_state:
-            st.session_state["active_version_index"] = 0
-
-        selected_version = st.selectbox(
-            "Select Version",
-            options=range(len(versions)),
-            format_func=lambda i: version_labels[i],
-            key="version_selector"
-        )
-
-        st.session_state["active_version_index"] = selected_version
-        data = versions[selected_version]
-
-
-        # ==============================
-        # THEN CONTINUE NORMAL RENDERING
-        # ==============================
+        # Always show latest version
+        data = versions[-1]
+        version_count = len(versions)
 
         with st.expander("Storyline JSON Output (Technical View)", expanded=False):
             st.json(data)
@@ -667,7 +661,6 @@ Requirements:
         st.subheader("Storyline Table Preview")
 
         for variation in data["variations"]:
-
             st.write(variation["story_variation"])
             st.write("Concept:", variation["concept"])
             st.write("Setting:", variation["setting"])
@@ -678,27 +671,33 @@ Requirements:
 
         excel_file = convert_json_to_excel(data)
 
+        # File naming logic
+        if version_count == 1:
+            file_name = "storyboard.xlsx"
+        else:
+            file_name = f"storyboard version {version_count - 1}.xlsx"
+
         st.download_button(
             label="Download Storyline (.xlsx)",
             data=excel_file,
-            file_name="storyine.xlsx",
+            file_name=file_name,
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-    # ======================================
-    # MINOR REVISION SECTION
-    # ======================================
+        # ======================================
+        # REVISION SECTION
+        # ======================================
 
-        st.subheader("Request Minor Revision")
+        st.subheader("Revise Storyline")
 
         with st.form("revision_form"):
 
             revision_note = st.text_area(
-                "Describe the minor revision clearly",
+                "Describe the revision clearly",
                 placeholder="Example: Make tone more emotional but keep structure same."
             )
 
-            submit_revision = st.form_submit_button("Revise Storyline")
+            submit_revision = st.form_submit_button("Apply Revision")
 
         if submit_revision:
 
@@ -708,32 +707,25 @@ Requirements:
 
             with st.spinner("Revising storyline..."):
 
-                previous_json = json.dumps(
-                    st.session_state["storyline_versions"][
-                        st.session_state["active_version_index"]
-                    ],
-                    indent=2
-                )
+                previous_json = json.dumps(data, indent=2)
 
                 revision_prompt = f"""
-        You are editing an existing JSON object.
+You are editing an existing JSON object.
 
-        Current JSON:
-        {previous_json}
+Current JSON:
+{previous_json}
 
-        Apply this minor revision:
-        {revision_note}
+Apply this revision:
+{revision_note}
 
-        Strict Rules:
-        - Return the FULL updated JSON.
-        - Keep structure identical.
-        - Do not remove fields.
-        - Do not change variation count.
-        - Do not change shot count.
-        - Do not add commentary.
-        - Do not add markdown.
-        - Return JSON only.
-        """
+Rules:
+- Return FULL updated JSON.
+- Keep structure identical.
+- Do not remove fields.
+- Do not change variation count.
+- Do not change shot count.
+- Return JSON only.
+"""
 
                 response = client.responses.create(
                     model=MODEL_NAME,
@@ -756,10 +748,11 @@ Requirements:
                         st.code(output)
                         st.stop()
 
+                # Append new version
                 st.session_state["storyline_versions"].append(parsed)
-                st.session_state["version_selector"] = len(st.session_state["storyline_versions"]) - 1
-                st.rerun()
 
+                # Rerun to refresh UI
+                st.rerun()
 
 # ======================================
 # TAB 3 — PROMPT GENERATOR
