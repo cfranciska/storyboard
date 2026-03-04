@@ -22,11 +22,56 @@ MODEL_NAME = "gpt-5-mini"
 # ======================================
 
 STANDARDIZATION_SYSTEM_PROMPT = """
-You are a standardization engine.
-Return only the Creative Spec Schema exactly as requested.
-Do not add commentary.
-Do not invent claims.
-If missing info, use "unknown".
+You are a standardization engine that converts raw inputs into a strictly structured Creative Spec used as a single source of truth for downstream automation.
+
+Rules:
+- Return valid JSON only.
+- Do not add explanations or commentary.
+- Do not invent facts or claims.
+- If information is missing or unclear, use "unknown".
+- Normalize values when applicable.
+- Rank product value propositions by importance based only on the input.
+- Extract and restate information concisely.
+- Do not validate, evaluate, or optimize.
+- Do not include fields outside the defined schema.
+
+Return JSON in the exact structure below:
+
+{
+  "product_brand_context": {
+    "product_name": "",
+    "product_category": "",
+    "product_value_propositions_ranked": [
+      {
+        "rank": 1,
+        "value": ""
+      }
+    ],
+    "product_usage": "",
+    "mandatory_brand_rules": ""
+  },
+  "audience_market_context": {
+    "target_market": "",
+    "region": "",
+    "language": "",
+    "age_persona": "",
+    "key_objections": "",
+    "primary_hook_angle": ""
+  },
+  "campaign_distribution_context": {
+    "objective": "",
+    "platform": "",
+    "story_concept": "",
+    "tone": "",
+    "cta_intent": ""
+  }
+}
+
+Notes:
+- "product_value_propositions_ranked" must be an array.
+- Include all ranks present in the input (rank 1 = highest importance).
+- If no value propositions exist, return an empty array.
+- If a field is missing, use "unknown".
 """
 
 STORYLINE_SYSTEM_PROMPT = """
@@ -250,6 +295,7 @@ def copy_button(text, button_label="Copy Text"):
     """, height=45)
 
 def call_text_model(system_prompt, user_prompt):
+
     response = client.responses.create(
         model=MODEL_NAME,
         input=[
@@ -257,6 +303,7 @@ def call_text_model(system_prompt, user_prompt):
             {"role": "user", "content": user_prompt}
         ]
     )
+
     return response.output_text
 
 
@@ -338,6 +385,45 @@ No cinematic color grading, no film grain, no anamorphic lens effects, no DSLR o
 """
 }
 
+#buat tab 1 output
+
+def format_creative_spec_plain(data):
+
+    p = data.get("product_brand_context", {})
+    a = data.get("audience_market_context", {})
+    c = data.get("campaign_distribution_context", {})
+
+    lines = []
+
+    lines.append("=== PRODUCT & BRAND CONTEXT ===\n")
+    lines.append(f"Product Name: {p.get('product_name', 'unknown')}")
+    lines.append(f"Product Category: {p.get('product_category', 'unknown')}")
+
+    lines.append("\nProduct Value Propositions (Ranked):")
+    for item in p.get("product_value_propositions_ranked", []):
+        rank = item.get("rank", "unknown")
+        value = item.get("value", "unknown")
+        lines.append(f"  Rank {rank}: {value}")
+
+    lines.append(f"\nProduct Usage: {p.get('product_usage', 'unknown')}")
+    lines.append(f"Mandatory Brand Rules: {p.get('mandatory_brand_rules', 'unknown')}")
+
+    lines.append("\n=== AUDIENCE & MARKET CONTEXT ===\n")
+    lines.append(f"Target Market: {a.get('target_market', 'unknown')}")
+    lines.append(f"Region: {a.get('region', 'unknown')}")
+    lines.append(f"Language: {a.get('language', 'unknown')}")
+    lines.append(f"Age & Persona: {a.get('age_persona', 'unknown')}")
+    lines.append(f"Key Objections: {a.get('key_objections', 'unknown')}")
+    lines.append(f"Primary Hook Angle: {a.get('primary_hook_angle', 'unknown')}")
+
+    lines.append("\n=== CAMPAIGN & DISTRIBUTION CONTEXT ===\n")
+    lines.append(f"Objective: {c.get('objective', 'unknown')}")
+    lines.append(f"Platform: {c.get('platform', 'unknown')}")
+    lines.append(f"Story Concept: {c.get('story_concept', 'unknown')}")
+    lines.append(f"Tone: {c.get('tone', 'unknown')}")
+    lines.append(f"CTA Intent: {c.get('cta_intent', 'unknown')}")
+
+    return "\n".join(lines)
 
 # ======================================
 # UI
@@ -389,6 +475,11 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+if "active_tab" not in st.session_state:
+    st.session_state["active_tab"] = 0
+
+tab_index = st.session_state["active_tab"]
+
 tab1, tab2, tab3 = st.tabs([
     "Product Knowledge",
     "Storyline Generator",
@@ -419,34 +510,61 @@ Audience Context: {audience}
 Campaign: {campaign}
 """
 
-            result = call_text_model(
-                STANDARDIZATION_SYSTEM_PROMPT,
-                user_prompt
+            # Minimal, SDK-compatible call
+            response = client.responses.create(
+                model=MODEL_NAME,
+                input=[
+                    {"role": "system", "content": STANDARDIZATION_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt}
+                ]
             )
 
-            st.session_state["creative_spec"] = result
+            result = response.output_text.strip()
 
-    if "creative_spec" in st.session_state:
+            try:
+                parsed = json.loads(result)
+            except json.JSONDecodeError:
+                # Auto-clean common markdown wrapping issues
+                cleaned = result.replace("```json", "").replace("```", "").strip()
+                try:
+                    parsed = json.loads(cleaned)
+                except json.JSONDecodeError:
+                    st.error("Model did not return valid JSON.")
+                    st.code(result)
+                    st.stop()
 
-        st.text_area(
-            "Creative Spec Output",
-            st.session_state["creative_spec"],
-            height=400
-        )
+            # Store in session state
+            st.session_state["creative_spec_json"] = parsed
+            st.session_state["creative_spec_plain"] = format_creative_spec_plain(parsed)
+            
 
-        st.download_button(
-            label="Download Creative Spec (.txt)",
-            data=txt_file(st.session_state["creative_spec"]),
-            file_name="creative_spec.txt",
-            mime="text/plain"
-        )
+    # Display section
+    if "creative_spec_json" in st.session_state:
+
+        spec_tab1, spec_tab2 = st.tabs(["Plain Text", "JSON"])
+
+        with spec_tab1:
+            st.text_area(
+                "Creative Spec (Readable)",
+                st.session_state["creative_spec_plain"],
+                height=500
+            )
+
+            st.download_button(
+                label="Download Creative Spec (.txt)",
+                data=txt_file(st.session_state["creative_spec_plain"]),
+                file_name="creative_spec.txt",
+                mime="text/plain"
+            )
+
+        with spec_tab2:
+            st.json(st.session_state["creative_spec_json"])
 
 # ======================================
 # TAB 2 — STORYLINE GENERATOR
 # ======================================
 
 with tab2:
-
     st.header("Storyline Generator")
 
     creative_spec_input = st.text_area(
@@ -479,7 +597,7 @@ with tab2:
     )
     other_info = st.text_area("Creative Direction")
 
-    if st.button("Generate Storyline"):
+    if st.button("Generate Storyline", key="generate_storyline_btn"):
 
         with st.spinner("Generating Storyline..."):
 
@@ -512,7 +630,7 @@ Requirements:
                 st.error("Model did not return valid JSON. Please regenerate.")
                 st.stop()
 
-    if "storyline_json" in st.session_state:
+    if "storyline_versions" in st.session_state:
 
         versions = st.session_state["storyline_versions"]
         active_index = st.session_state["active_version_index"]
@@ -525,15 +643,19 @@ Requirements:
             f"Version {i+1}" for i in range(len(versions))
         ]
 
+        if "active_version_index" not in st.session_state:
+            st.session_state["active_version_index"] = 0
+
         selected_version = st.selectbox(
             "Select Version",
             options=range(len(versions)),
             format_func=lambda i: version_labels[i],
-            index=active_index
+            key="version_selector"
         )
 
         st.session_state["active_version_index"] = selected_version
         data = versions[selected_version]
+
 
         # ==============================
         # THEN CONTINUE NORMAL RENDERING
@@ -569,36 +691,49 @@ Requirements:
 
         st.subheader("Request Minor Revision")
 
-        revision_note = st.text_area(
-            "Describe the minor revision clearly",
-            placeholder="Example: Make tone more emotional but keep structure same."
-        )
+        with st.form("revision_form"):
 
-        if st.button("Revise Storyline", disabled=not revision_note.strip()):
+            revision_note = st.text_area(
+                "Describe the minor revision clearly",
+                placeholder="Example: Make tone more emotional but keep structure same."
+            )
+
+            submit_revision = st.form_submit_button("Revise Storyline")
+
+        if submit_revision:
+
+            if not revision_note.strip():
+                st.warning("Please enter a revision note.")
+                st.stop()
 
             with st.spinner("Revising storyline..."):
 
                 previous_json = json.dumps(
-                    st.session_state["storyline_json"],
+                    st.session_state["storyline_versions"][
+                        st.session_state["active_version_index"]
+                    ],
                     indent=2
                 )
 
                 revision_prompt = f"""
-    Here is the current storyline JSON:
+        You are editing an existing JSON object.
 
-    {previous_json}
+        Current JSON:
+        {previous_json}
 
-    Apply the following minor revision:
-    {revision_note}
+        Apply this minor revision:
+        {revision_note}
 
-    Rules:
-    - Keep JSON structure identical.
-    - Do NOT remove fields.
-    - Do NOT change number of variations.
-    - Do NOT change number of shots.
-    - Only modify what is required.
-    - Return valid JSON only.
-    """
+        Strict Rules:
+        - Return the FULL updated JSON.
+        - Keep structure identical.
+        - Do not remove fields.
+        - Do not change variation count.
+        - Do not change shot count.
+        - Do not add commentary.
+        - Do not add markdown.
+        - Return JSON only.
+        """
 
                 response = client.responses.create(
                     model=MODEL_NAME,
@@ -608,16 +743,23 @@ Requirements:
                     ]
                 )
 
-                output = response.output_text
+                output = response.output_text.strip()
 
                 try:
                     parsed = json.loads(output)
-                    st.session_state["storyline_versions"].append(parsed)
-                    st.session_state["active_version_index"] = len(st.session_state["storyline_versions"]) - 1
-                    st.rerun()
-                except:
-                    st.error("Revision failed. Invalid JSON returned.")
-                    st.stop()
+                except json.JSONDecodeError:
+                    cleaned = output.replace("```json", "").replace("```", "").strip()
+                    try:
+                        parsed = json.loads(cleaned)
+                    except:
+                        st.error("Revision failed. Invalid JSON returned.")
+                        st.code(output)
+                        st.stop()
+
+                st.session_state["storyline_versions"].append(parsed)
+                st.session_state["version_selector"] = len(st.session_state["storyline_versions"]) - 1
+                st.rerun()
+
 
 # ======================================
 # TAB 3 — PROMPT GENERATOR
