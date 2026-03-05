@@ -450,52 +450,63 @@ def format_creative_spec_plain(data):
 # ======================================
 # UI
 # ======================================
-st.image("header.png", use_container_width=True)
-st.markdown("""
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&display=swap" rel="stylesheet">
 
-<style>
-html, body, [class*="css"]  {
-    font-family: 'Cinzel', serif !important;
-}
+col1, col2 = st.columns([1,4])
 
-.custom-title {
-    font-family: 'Cinzel', serif !important;
-    font-size: 64px;
-    font-weight: 600;
-    text-align: center;
-    margin-top: 40px;
-}
-</style>
+with col1:
+    st.image("header.png", width=220)
 
-<h1 class="custom-title">Fragments V3</h1>
-""", unsafe_allow_html=True)
+with col2:
+    st.markdown("""
+    <div style="
+        text-align: right;
+        font-size: 12px;
+        margin-top: 25px;
+        line-height: 1.6;
+        color: #CBD5E1;">
+    Every frame is a delightful rebellion against the mundane.
+    </div>
+    """, unsafe_allow_html=True)
 
-st.markdown("""
-<div style="
-    text-align: center;
-    font-size: 18px;
-    max-width: 900px;
-    margin: 0 auto 12px auto;
-    line-height: 1.6;
-    color: #CBD5E1;
-">
-Every frame is a delightful rebellion against the mundane. Why follow the stuffy rules of the ton when you can orchestrate a visual masterpiece with a wink and a dash of daring?
-</div>
-""", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="
+        text-align: right;
+        font-size: 12px;
+        line-height: 1.6;
+        font-style: italic;
+        color: #CBD5E1;">
+    Version 0.3. Currently only support Custom AI Ads <br> (Including Product Creative Specs, Storyline Creation, Character Prompt Generation, Image & Video Prompt Generation) -
+    </div>
+    """, unsafe_allow_html=True)
 
-st.markdown("""
-<div style="
-    text-align: center;
-    font-size: 12px;
-    max-width: 900px;
-    margin: 0 auto 60px auto;
-    line-height: 1.6;
-    font-style: italic;
-    color: #CBD5E1;
-"> - Currently only support Custom AI Ads (Including Product Creative Specs, Storyline Creation, Character Prompt Generation, Image & Video Prompt Generation) -
-</div>
-""", unsafe_allow_html=True)
+
+# st.image("header.png", width=220)
+# st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+
+# st.markdown("""
+# <div style="
+#     text-align: right;
+#     font-size: 18px;
+#     max-width: none;
+#     margin: 0 auto 12px auto;
+#     line-height: 1.6;
+#     color: #CBD5E1;
+# ">
+# Every frame is a delightful rebellion against the mundane.</div>
+# """, unsafe_allow_html=True)
+
+# st.markdown("""
+# <div style="
+#     text-align: right;
+#     font-size: 12px;
+#     max-width: none;
+#     margin: 0 auto 60px auto;
+#     line-height: 1.6;
+#     font-style: italic;
+#     color: #CBD5E1;
+# "> - Currently only support Custom AI Ads (Including Product Creative Specs, Storyline Creation, Character Prompt Generation, Image & Video Prompt Generation) -
+# </div>
+# """, unsafe_allow_html=True)
 
 if "active_tab" not in st.session_state:
     st.session_state["active_tab"] = 0
@@ -513,8 +524,10 @@ tab1, tab2, tab3 = st.tabs([
 # ======================================
 
 with tab1:
+    controls, output = st.columns([1,2])
 
-    st.header("Creative Spec Standardization")
+with controls:
+    #st.header("Creative Spec Standardization")
 
     product_files = st.file_uploader(
     "Upload Product Assets (Images or PowerPoint)",
@@ -598,7 +611,7 @@ with tab1:
             st.session_state["creative_spec_json"] = parsed
             st.session_state["creative_spec_plain"] = format_creative_spec_plain(parsed)
             
-
+with output:
     # Display section
     if "creative_spec_json" in st.session_state:
 
@@ -626,7 +639,10 @@ with tab1:
 # ======================================
 
 with tab2:
-    st.header("Storyline Generator")
+    controls, output = st.columns([1,2])
+    
+with controls:
+    #st.header("Storyline Generator")
 
     creative_spec_input = st.text_area(
         "Product Creative Spec (Copy Paste Here)",
@@ -707,7 +723,7 @@ Requirements:
     # ======================================
     # DISPLAY + DOWNLOAD
     # ======================================
-
+with output:
     if "storyline_versions" in st.session_state:
 
         versions = st.session_state["storyline_versions"]
@@ -748,6 +764,10 @@ Requirements:
         # ======================================
         # REVISION SECTION
         # ======================================
+
+        if st.session_state.get("revision_done"):
+            st.success("Revision generated successfully.")
+            del st.session_state["revision_done"]
 
         st.subheader("Revise Storyline")
 
@@ -811,7 +831,7 @@ Rules:
 
                 # Append new version
                 st.session_state["storyline_versions"].append(parsed)
-
+                st.session_state["revision_done"] = True
                 # Rerun to refresh UI
                 st.rerun()
 
@@ -820,187 +840,229 @@ Rules:
 # ======================================
 
 with tab3:
+    controls, output = st.columns([1,2])
 
-    st.header("Prompt Generator")
+    with controls:
 
-    storyline_input = st.text_area(
-        "Storyline (Copy Paste)",
-        height=200
-    )
+        #st.header("Prompt Generator")
 
-    creative_spec_input_pg = st.text_area(
-        "Product Creative Spec or Product Size",
-        height=200
-    )
-
-    selected_style = st.selectbox(
-        "Image Style",
-        options=list(IMAGE_STYLE_OPTIONS.keys()),
-        index=0
-    )
-    image_style_input = IMAGE_STYLE_OPTIONS[selected_style]
-
-    ethnicity_outfit_input = st.text_area(
-        "Ethnicity & Outfit Notes",
-        placeholder="e.g. Javanese woman, pastel hijab, modern modest wear"
-    )
-    st.caption("Limit 5MB per file • PNG, JPG, JPEG")
-    character_references = st.file_uploader(
-        "Upload Character Reference Images",
-        type=["png", "jpg", "jpeg"],
-        accept_multiple_files=True
-    )
-
-
-    # ======================================
-    # SIDE-BY-SIDE BUTTONS HERE
-    # ======================================
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        generate_char = st.button(
-            "Generate Character Prompts",
-            use_container_width=True
+        storyline_input = st.text_area(
+            "Storyline (Copy Paste)",
+            height=200
         )
 
-    with col2:
-        generate_iv = st.button(
-            "Generate Image & Video Prompts",
-            use_container_width=True
+        creative_spec_input_pg = st.text_area(
+            "Product Creative Spec or Product Size",
+            height=200
         )
 
-    
-    # ======================================
-    # GENERATION LOGIC BELOW
-    # ======================================
+        selected_style = st.selectbox(
+            "Image Style",
+            options=list(IMAGE_STYLE_OPTIONS.keys()),
+            index=0
+        )
+        image_style_input = IMAGE_STYLE_OPTIONS[selected_style]
 
-    if generate_char:
-        with st.spinner("Generating character prompts..."):
+        ethnicity_outfit_input = st.text_area(
+            "Ethnicity & Outfit Notes",
+            placeholder="e.g. Javanese woman, pastel hijab, modern modest wear"
+        )
+        st.caption("Limit 5MB per file • PNG, JPG, JPEG")
+        character_references = st.file_uploader(
+            "Upload Character Reference Images",
+            type=["png", "jpg", "jpeg"],
+            accept_multiple_files=True
+        )
 
-            num_refs = len(character_references) if character_references else 0
 
-            character_prompt_input = f"""
-            Storyline:
-            {storyline_input}
+        # ======================================
+        # SIDE-BY-SIDE BUTTONS HERE
+        # ======================================
 
-            Product Creative Spec:
-            {creative_spec_input_pg}
+        col1, col2 = st.columns(2)
 
-            Image Style:
-            {image_style_input}
+        with col1:
+            generate_char = st.button(
+                "Character Prompts",
+                use_container_width=True
+            )
 
-            Ethnicity & Outfit Notes:
-            {ethnicity_outfit_input}
+        with col2:
+            generate_iv = st.button(
+                "Image & Video Prompts",
+                use_container_width=True
+            )
 
-            Character Reference Images Provided: {num_refs}
-            Use them as visual identity reference for the character.
-            """
+        
+        # ======================================
+        # GENERATION LOGIC BELOW
+        # ======================================
 
-            response = client.responses.create(
-                model=MODEL_NAME,
-                input=[
-                    {"role": "system", "content": CHARACTER_SYSTEM_PROMPT},
-                    {"role": "user", "content": character_prompt_input}
+        if generate_char:
+            with st.spinner("Generating character prompts..."):
+
+                character_prompt_input = f"""
+        Storyline:
+        {storyline_input}
+
+        Product Creative Spec:
+        {creative_spec_input_pg}
+
+        Image Style:
+        {image_style_input}
+
+        Ethnicity & Outfit Notes:
+        {ethnicity_outfit_input}
+        """
+                content = [
+                    {"type": "input_text", "text": character_prompt_input}
                 ]
-            )
 
-            st.session_state["character_prompt_output"] = response.output_text
+                if character_references:
+                    for file in character_references:
+
+                        image_bytes = file.read()
+                        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+                        content.append({
+                            "type": "input_image",
+                            "image_url": f"data:image/jpeg;base64,{image_base64}"
+                        })
+
+                response = client.responses.create(
+                    model=MODEL_NAME,
+                    input=[
+                        {"role": "system", "content": CHARACTER_SYSTEM_PROMPT},
+                        {
+                            "role": "user",
+                            "content": content
+                        }
+                    ]
+                )
+
+                st.session_state["character_prompt_output"] = response.output_text
+
+        if generate_iv:
+            with st.spinner("Generating image & video prompts..."):
+
+                iv_prompt_input = f"""
+        Storyline:
+        {storyline_input}
+
+        Product Creative Spec:
+        {creative_spec_input_pg}
+
+        Image Style:
+        {image_style_input}
+
+        Ethnicity & Outfit Notes:
+        {ethnicity_outfit_input}
+        """
+
+                response = client.responses.create(
+                    model=MODEL_NAME,
+                    input=[
+                        {"role": "system", "content": IMAGE_VIDEO_SYSTEM_PROMPT},
+                        {"role": "user", "content": iv_prompt_input}
+                    ]
+                )
+
+                st.session_state["image_video_output"] = response.output_text
+
+    with output:
+
+        if (
+            "character_prompt_output" in st.session_state
+            or "image_video_output" in st.session_state
+        ):
+
+            #st.subheader("Generated Outputs")
+
+            tab1, tab2 = st.tabs(["Character Prompts", "Image & Video Prompts"])
+
+            with tab1:
+                if "character_prompt_output" in st.session_state:
+
+                    character_text = st.session_state["character_prompt_output"]
+
+                    copy_button(character_text)
+
+                    st.text_area(
+                        "",
+                        character_text,
+                        height=600,
+                        label_visibility="collapsed"
+                    )
+                else:
+                    st.info("No character prompts generated yet.")
+
+            with tab2:
+                if "image_video_output" in st.session_state:
+
+                    iv_text = st.session_state["image_video_output"]
+
+                    copy_button(iv_text)
+
+                    st.text_area(
+                        "",
+                        iv_text,
+                        height=600,
+                        label_visibility="collapsed"
+                    )
+                else:
+                    st.info("No image & video prompts generated yet.")
 
 
-    if generate_char:
-        with st.spinner("Generating character prompts..."):
-
-            character_prompt_input = f"""
-    Storyline:
-    {storyline_input}
-
-    Product Creative Spec:
-    {creative_spec_input_pg}
-
-    Image Style:
-    {image_style_input}
-
-    Ethnicity & Outfit Notes:
-    {ethnicity_outfit_input}
-    """
-            content = [
-                {"type": "input_text", "text": character_prompt_input}
-            ]
-
-            if character_references:
-                for file in character_references:
-
-                    image_bytes = file.read()
-                    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-
-                    content.append({
-                        "type": "input_image",
-                        "image_url": f"data:image/jpeg;base64,{image_base64}"
-                    })
-
-            response = client.responses.create(
-                model=MODEL_NAME,
-                input=[
-                    {"role": "system", "content": CHARACTER_SYSTEM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": content
-                    }
-                ]
-            )
-
-            st.session_state["character_prompt_output"] = response.output_text
 
 
-# ======================================
-# OUTPUT TABS
-# ======================================
+    # # ======================================
+    # # OUTPUT TABS
+    # # ======================================
 
-if (
-    "character_prompt_output" in st.session_state
-    or "image_video_output" in st.session_state
-):
+    # if (
+    #     "character_prompt_output" in st.session_state
+    #     or "image_video_output" in st.session_state
+    # ):
 
-    output_tab1, output_tab2 = st.tabs([
-        "Character Prompts",
-        "Image & Video Prompts Per Shot"
-    ])
-    # ------------------------------
-    # CHARACTER TAB
-    # ------------------------------
-    with output_tab1:
+    #     output_tab1, output_tab2 = st.tabs([
+    #         "Character Prompts",
+    #         "Image & Video Prompts Per Shot"
+    #     ])
+    #     # ------------------------------
+    #     # CHARACTER TAB
+    #     # ------------------------------
+    #     with output_tab1:
 
-        if "character_prompt_output" in st.session_state:
-            character_text = st.session_state["character_prompt_output"]
+    #         if "character_prompt_output" in st.session_state:
+    #             character_text = st.session_state["character_prompt_output"]
 
-            copy_button(character_text, "Copy Text")
+    #             copy_button(character_text, "Copy Text")
 
-            st.text_area(
-                "",
-                character_text,
-                height=600,
-                label_visibility="collapsed"
-            )
-        else:
-            st.info("No character prompts generated yet.")
+    #             st.text_area(
+    #                 "",
+    #                 character_text,
+    #                 height=600,
+    #                 label_visibility="collapsed"
+    #             )
+    #         else:
+    #             st.info("No character prompts generated yet.")
 
 
-    # ------------------------------
-    # IMAGE & VIDEO TAB
-    # ------------------------------
-    with output_tab2:
+    #     # ------------------------------
+    #     # IMAGE & VIDEO TAB
+    #     # ------------------------------
+    #     with output_tab2:
 
-        if "image_video_output" in st.session_state:
-            iv_text = st.session_state["image_video_output"]
+    #         if "image_video_output" in st.session_state:
+    #             iv_text = st.session_state["image_video_output"]
 
-            copy_button(iv_text, "Copy Text")
+    #             copy_button(iv_text, "Copy Text")
 
-            st.text_area(
-                "",
-                iv_text,
-                height=600,
-                label_visibility="collapsed"
-            )
-        else:
-            st.info("No image & video prompts generated yet.")
+    #             st.text_area(
+    #                 "",
+    #                 iv_text,
+    #                 height=600,
+    #                 label_visibility="collapsed"
+    #             )
+    #         else:
+    #             st.info("No image & video prompts generated yet.")
