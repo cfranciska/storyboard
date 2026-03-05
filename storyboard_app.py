@@ -468,7 +468,7 @@ html, body, [class*="css"]  {
 }
 </style>
 
-<h1 class="custom-title">The Mischievous Plotter</h1>
+<h1 class="custom-title">Fragments V3</h1>
 """, unsafe_allow_html=True)
 
 st.markdown("""
