@@ -5,6 +5,7 @@ from io import BytesIO
 from openai import OpenAI
 import json
 import streamlit.components.v1 as components
+import base64
 
 # ======================================
 # CONFIG
@@ -784,6 +785,12 @@ with tab3:
         placeholder="e.g. Javanese woman, pastel hijab, modern modest wear"
     )
 
+    character_references = st.file_uploader(
+        "Upload Character Reference Images",
+        type=["png", "jpg", "jpeg"],
+        accept_multiple_files=True
+    )
+
     # ======================================
     # SIDE-BY-SIDE BUTTONS HERE
     # ======================================
@@ -810,20 +817,24 @@ with tab3:
     if generate_char:
         with st.spinner("Generating character prompts..."):
 
+            num_refs = len(character_references) if character_references else 0
+
             character_prompt_input = f"""
-Storyline:
-{storyline_input}
+            Storyline:
+            {storyline_input}
 
-Product Creative Spec:
-{creative_spec_input_pg}
+            Product Creative Spec:
+            {creative_spec_input_pg}
 
-Image Style:
-{image_style_input}
+            Image Style:
+            {image_style_input}
 
-Ethnicity & Outfit Notes:
-{ethnicity_outfit_input}
+            Ethnicity & Outfit Notes:
+            {ethnicity_outfit_input}
 
-"""
+            Character Reference Images Provided: {num_refs}
+            Use them as visual identity reference for the character.
+            """
 
             response = client.responses.create(
                 model=MODEL_NAME,
@@ -836,29 +847,50 @@ Ethnicity & Outfit Notes:
             st.session_state["character_prompt_output"] = response.output_text
 
 
-    if generate_iv:
-        with st.spinner("Generating image & video prompts..."):
+    if generate_char:
+        with st.spinner("Generating character prompts..."):
 
-            iv_prompt_input = f"""
-Storyline:
-{storyline_input}
+            character_prompt_input = f"""
+    Storyline:
+    {storyline_input}
 
-Product Creative Spec:
-{creative_spec_input_pg}
+    Product Creative Spec:
+    {creative_spec_input_pg}
 
-Image Style:
-{image_style_input}
-"""
+    Image Style:
+    {image_style_input}
+
+    Ethnicity & Outfit Notes:
+    {ethnicity_outfit_input}
+    """
+            content = [
+                {"type": "input_text", "text": character_prompt_input}
+            ]
+
+            if character_references:
+                for file in character_references:
+
+                    image_bytes = file.read()
+                    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+                    content.append({
+                        "type": "input_image",
+                        "image_url": f"data:image/jpeg;base64,{image_base64}"
+                    })
 
             response = client.responses.create(
                 model=MODEL_NAME,
                 input=[
-                    {"role": "system", "content": IMAGE_VIDEO_SYSTEM_PROMPT},
-                    {"role": "user", "content": iv_prompt_input}
+                    {"role": "system", "content": CHARACTER_SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": content
+                    }
                 ]
             )
 
-            st.session_state["image_video_output"] = response.output_text
+            st.session_state["character_prompt_output"] = response.output_text
+
 
 # ======================================
 # OUTPUT TABS
