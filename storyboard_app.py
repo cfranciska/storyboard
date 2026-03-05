@@ -714,22 +714,24 @@ with controls:
     if st.button("Generate Storyline"):
 
         with st.spinner("Generating Storyline..."):
-
+            
             user_text = f"""
-Character Traits:
-{character_traits}
+            Product Knowledge:
+            {product_spec}
 
-Creative Spec:
-{creative_spec_input}
+            Character Traits:
+            {character_traits}
 
-Requirements:
-- Number of variations: {num_stories}
-- Shots per variation: {shots_per_story}
-- Duration per story: {duration_each}
-- Language: {language}
-- VO Language: {vo_language}
-- Other info: {other_info}
-"""
+            Creative Direction:
+            {creative_direction}
+
+            Requirements:
+            - Number of variations: {num_stories}
+            - Shots per variation: {shots}
+            - Duration per story: {duration}
+            - Language: {language}
+            - VO Language: {text_language}
+            """
 
             output = call_text_model(
                 STORYLINE_SYSTEM_PROMPT,
