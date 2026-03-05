@@ -7,11 +7,20 @@ import json
 import streamlit.components.v1 as components
 import base64
 
+
 # ======================================
 # CONFIG
 # ======================================
 
 st.set_page_config(page_title="AI Storyboard Builder", layout="wide")
+
+st.markdown("""
+<style>
+[data-testid="stFileUploaderDropzoneInstructions"] div:nth-child(2) {
+    display: none;
+}
+</style>
+""", unsafe_allow_html=True)
 
 API_KEY = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=API_KEY)
@@ -365,6 +374,18 @@ def convert_json_to_excel(data):
     file_stream.seek(0)
     return file_stream
 
+def extract_ppt_text(file):
+    prs = Presentation(file)
+    slides_text = []
+    for i, slide in enumerate(prs.slides):
+        slide_text = []
+        for shape in slide.shapes:
+            if hasattr(shape, "text"):
+                slide_text.append(shape.text)
+        slides_text.append(f"Slide {i+1}: " + " ".join(slide_text))
+    return "\n".join(slides_text)
+
+
 #ImageStyle
 IMAGE_STYLE_OPTIONS = {
     "iPhone Front Camera": """
@@ -495,6 +516,12 @@ with tab1:
 
     st.header("Creative Spec Standardization")
 
+    product_files = st.file_uploader(
+    "Upload Product Assets (Images or PowerPoint)",
+    type=["png","jpg","jpeg","ppt","pptx"],
+    accept_multiple_files=True
+    )
+
     product_desc = st.text_area("Product Description")
     audience = st.text_area("Audience")
     campaign = st.text_area("Campaign")
@@ -503,20 +530,53 @@ with tab1:
 
         with st.spinner("Generating Creative Spec..."):
 
-            user_prompt = f"""
-Convert the following into standardized Creative Spec.
+            content = [
+                {
+                    "type": "input_text",
+                    "text": f"""
+            Convert the following into standardized Creative Spec.
 
-Product Context: {product_desc}
-Audience Context: {audience}
-Campaign: {campaign}
-"""
+            Product Context:
+            {product_desc}
+
+            Audience Context:
+            {audience}
+
+            Campaign:
+            {campaign}
+            """
+                }
+            ]
+
+            if product_files:
+
+                for file in product_files:
+
+                    if file.type in ["image/png", "image/jpeg"]:
+
+                        image_bytes = file.read()
+                        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+                        content.append({
+                            "type": "input_image",
+                            "image_url": f"data:{file.type};base64,{image_base64}"
+                        })
+
+                    elif file.name.endswith(("ppt", "pptx")):
+
+                        ppt_text = extract_ppt_text(file)
+
+                        content.append({
+                            "type": "input_text",
+                            "text": f"\nProduct Deck Content:\n{ppt_text}"
+                        })
 
             # Minimal, SDK-compatible call
             response = client.responses.create(
                 model=MODEL_NAME,
                 input=[
                     {"role": "system", "content": STANDARDIZATION_SYSTEM_PROMPT},
-                    {"role": "user", "content": user_prompt}
+                    {"role": "user", "content": content}
                 ]
             )
 
@@ -784,12 +844,13 @@ with tab3:
         "Ethnicity & Outfit Notes",
         placeholder="e.g. Javanese woman, pastel hijab, modern modest wear"
     )
-
+    st.caption("Limit 5MB per file • PNG, JPG, JPEG")
     character_references = st.file_uploader(
         "Upload Character Reference Images",
         type=["png", "jpg", "jpeg"],
         accept_multiple_files=True
     )
+
 
     # ======================================
     # SIDE-BY-SIDE BUTTONS HERE
