@@ -7,12 +7,28 @@ import json
 import streamlit.components.v1 as components
 import base64
 
-
 # ======================================
 # CONFIG
 # ======================================
 
 st.set_page_config(page_title="AI Storyboard Builder", layout="wide")
+
+st.markdown("""
+<style>
+
+/* reduce top whitespace */
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+}
+
+/* remove extra margin from first element */
+.block-container > div:first-child {
+    margin-top: 0;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown("""
 <style>
@@ -456,57 +472,6 @@ col1, col2 = st.columns([1,4])
 with col1:
     st.image("header.png", width=220)
 
-with col2:
-    st.markdown("""
-    <div style="
-        text-align: right;
-        font-size: 12px;
-        margin-top: 25px;
-        line-height: 1.6;
-        color: #CBD5E1;">
-    Every frame is a delightful rebellion against the mundane.
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="
-        text-align: right;
-        font-size: 12px;
-        line-height: 1.6;
-        font-style: italic;
-        color: #CBD5E1;">
-    Version 0.3. Currently only support Custom AI Ads <br> (Including Product Creative Specs, Storyline Creation, Character Prompt Generation, Image & Video Prompt Generation) -
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# st.image("header.png", width=220)
-# st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-
-# st.markdown("""
-# <div style="
-#     text-align: right;
-#     font-size: 18px;
-#     max-width: none;
-#     margin: 0 auto 12px auto;
-#     line-height: 1.6;
-#     color: #CBD5E1;
-# ">
-# Every frame is a delightful rebellion against the mundane.</div>
-# """, unsafe_allow_html=True)
-
-# st.markdown("""
-# <div style="
-#     text-align: right;
-#     font-size: 12px;
-#     max-width: none;
-#     margin: 0 auto 60px auto;
-#     line-height: 1.6;
-#     font-style: italic;
-#     color: #CBD5E1;
-# "> - Currently only support Custom AI Ads (Including Product Creative Specs, Storyline Creation, Character Prompt Generation, Image & Video Prompt Generation) -
-# </div>
-# """, unsafe_allow_html=True)
 
 if "active_tab" not in st.session_state:
     st.session_state["active_tab"] = 0
@@ -644,37 +609,103 @@ with tab2:
 with controls:
     #st.header("Storyline Generator")
 
-    creative_spec_input = st.text_area(
-        "Product Creative Spec (Copy Paste Here)",
-        value=st.session_state.get("creative_spec", ""),
-        height=100
+    st.markdown("""
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">
+        Product Context
+        </div>
+        """, unsafe_allow_html=True)
+
+    product_spec = st.text_area("Product Knowledge (Copy the output from Tab 1 and paste it here)", height=150)
+
+    product_image = st.file_uploader("Upload Product Image")
+
+    st.markdown(
+        "<hr style='margin-top:10px;margin-bottom:10px;border-color:#262730;'>",
+        unsafe_allow_html=True
+    )
+    st.markdown("""
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">
+        Story Settings
+        </div>
+        """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        num_stories = st.number_input("Stories", min_value=1, value=1)
+
+    with col2:
+        shots = st.number_input("Shots / Story", min_value=1, value=8)
+
+    with col3:
+        duration = st.selectbox("Duration", ["10 sec", "15 sec", "20 sec", "30 sec"])
+
+    col4, col5 = st.columns(2)
+
+    with col4:
+        language = st.selectbox("Language", ["Indonesian","English"])
+
+    with col5:
+        text_language = st.selectbox("VO & Supers Language", ["Indonesian","English"])
+
+    st.markdown(
+        "<hr style='margin-top:10px;margin-bottom:10px;border-color:#262730;'>",
+        unsafe_allow_html=True
     )
 
-    character_traits = st.text_area("Character Traits")
-    st.file_uploader("Upload Product Image", type=["png", "jpg", "jpeg"])
+    st.markdown("""
+    <div style="font-size:14px;font-weight:600;margin-bottom:4px;">
+    Creative Direction
+    </div>
+    """, unsafe_allow_html=True)
 
-    num_stories = st.number_input("Number of Stories", 1, 10, 1)
-    shots_per_story = st.number_input("Number of Shots Per Story", 1, 20, 8)
+    creative_direction = st.text_area("Tone, style, and narrative approach that should guide how the storyboard is crafted.", height=120)
 
-    duration_each = st.selectbox(
-        "Duration Each Story",
-        options=["10 sec", "15 sec", "20 sec"],
-        index=2
+    st.markdown(
+        "<hr style='margin-top:10px;margin-bottom:10px;border-color:#262730;'>",
+        unsafe_allow_html=True
     )
 
-    language = st.selectbox(
-        "Language",
-        options=["Indonesian", "English"],
-        index=0
-    )
+    st.markdown("""
+    <div style="font-size:14px;font-weight:600;margin-bottom:4px;">
+    Character Traits
+    </div>
+    """, unsafe_allow_html=True)
 
-    vo_language = st.selectbox(
-        "VO & On-Screen Text Language",
-        options=["Indonesian", "English"],
-        index=0
-    )
+    character_traits = st.text_area("Traits that influence how the character speaks, reacts, and behaves in the story. Avoid visual descriptions.", height=120)
 
-    other_info = st.text_area("Creative Direction")
+
+    # creative_spec_input = st.text_area(
+    #     "Product Creative Spec (Copy Paste Here)",
+    #     value=st.session_state.get("creative_spec", ""),
+    #     height=100
+    # )
+
+    # character_traits = st.text_area("Character Traits")
+    # st.file_uploader("Upload Product Image", type=["png", "jpg", "jpeg"])
+
+    # num_stories = st.number_input("Number of Stories", 1, 10, 1)
+    # shots_per_story = st.number_input("Number of Shots Per Story", 1, 20, 8)
+
+    # duration_each = st.selectbox(
+    #     "Duration Each Story",
+    #     options=["10 sec", "15 sec", "20 sec"],
+    #     index=2
+    # )
+
+    # language = st.selectbox(
+    #     "Language",
+    #     options=["Indonesian", "English"],
+    #     index=0
+    # )
+
+    # vo_language = st.selectbox(
+    #     "VO & On-Screen Text Language",
+    #     options=["Indonesian", "English"],
+    #     index=0
+    # )
+
+    # other_info = st.text_area("Creative Direction")
 
     # ======================================
     # GENERATE STORYLINE
@@ -847,13 +878,13 @@ with tab3:
         #st.header("Prompt Generator")
 
         storyline_input = st.text_area(
-            "Storyline (Copy Paste)",
+            "Storyline (Copy the output from Tab 2 and paste it here)",
             height=200
         )
 
         creative_spec_input_pg = st.text_area(
-            "Product Creative Spec or Product Size",
-            height=200
+            "Product Knowlege (or Product Size)",
+            height=100
         )
 
         selected_style = st.selectbox(
@@ -864,7 +895,7 @@ with tab3:
         image_style_input = IMAGE_STYLE_OPTIONS[selected_style]
 
         ethnicity_outfit_input = st.text_area(
-            "Ethnicity & Outfit Notes",
+            "Character Design (Ethnicity, Outfit, Visual Identity)",
             placeholder="e.g. Javanese woman, pastel hijab, modern modest wear"
         )
         st.caption("Limit 5MB per file • PNG, JPG, JPEG")
@@ -1066,3 +1097,52 @@ with tab3:
     #             )
     #         else:
     #             st.info("No image & video prompts generated yet.")
+
+
+# ======================================
+# STICKY FOOTER
+# ======================================
+
+st.markdown("""
+<style>
+
+/* prevent content from being hidden behind footer */
+.block-container {
+padding-bottom: 80px;
+}
+
+/* sticky footer */
+.footer {
+position: fixed;
+bottom: 0;
+left: 0;
+width: 100%;
+background-color: #0E1117;
+text-align: center;
+padding: 10px;
+border-top: 1px solid #262730;
+z-index: 1000;
+}
+
+.footer-line1 {
+font-size: 12px;
+color: #CBD5E1;
+}
+
+.footer-line2 {
+font-size: 12px;
+color: #CBD5E1;
+font-style: italic;
+margin-top: 2px;
+}
+
+</style>
+
+<div class="footer">
+    <div class="footer-line1">
+        Version 0.3. Currently only support Custom AI Ads (Product Creative Specs, Storyline Creation, Character Prompt Generation,
+        Image & Video Prompt Generation). Every frame is a delightful rebellion against the mundane. 
+    </div>
+</div>
+
+""", unsafe_allow_html=True)
