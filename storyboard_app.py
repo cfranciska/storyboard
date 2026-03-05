@@ -659,7 +659,7 @@ with controls:
     </div>
     """, unsafe_allow_html=True)
 
-    creative_direction = st.text_area("Tone, style, and narrative approach that should guide how the storyboard is crafted.", height=120)
+    creative_direction = st.text_area("Tone, style, and narrative direction for the storyboard.", height=120)
 
     st.markdown(
         "<hr style='margin-top:10px;margin-bottom:10px;border-color:#262730;'>",
@@ -672,7 +672,7 @@ with controls:
     </div>
     """, unsafe_allow_html=True)
 
-    character_traits = st.text_area("Traits that influence how the character speaks, reacts, and behaves in the story. Avoid visual descriptions.", height=120)
+    character_traits = st.text_area("Traits defining speech, reactions, and behavior. Avoid visuals.", height=120)
 
 
     # creative_spec_input = st.text_area(
@@ -904,7 +904,7 @@ with tab3:
             accept_multiple_files=True
         )
 
-        # st.caption("Limit 5MB per file • PNG, JPG, JPEG")
+        #st.caption("Limit 5MB per file • PNG, JPG, JPEG")
         # ======================================
         # SIDE-BY-SIDE BUTTONS HERE
         # ======================================
