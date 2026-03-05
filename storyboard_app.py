@@ -898,14 +898,13 @@ with tab3:
             "Character Design (Ethnicity, Outfit, Visual Identity)",
             placeholder="e.g. Javanese woman, pastel hijab, modern modest wear"
         )
-        st.caption("Limit 5MB per file • PNG, JPG, JPEG")
         character_references = st.file_uploader(
             "Upload Character Reference Images",
             type=["png", "jpg", "jpeg"],
             accept_multiple_files=True
         )
 
-
+        # st.caption("Limit 5MB per file • PNG, JPG, JPEG")
         # ======================================
         # SIDE-BY-SIDE BUTTONS HERE
         # ======================================
