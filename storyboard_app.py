@@ -15,6 +15,16 @@ st.set_page_config(page_title="AI Storyboard Builder", layout="wide")
 
 st.markdown("""
 <style>
+.stop-button {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
 
 /* reduce top whitespace */
 .block-container {
@@ -48,7 +58,7 @@ MODEL_NAME = "gpt-5-mini"
 # ======================================
 
 STANDARDIZATION_SYSTEM_PROMPT = """
-You are a standardization engine that converts raw inputs into a strictly structured Creative Spec used as a single source of truth for downstream automation.
+You are a standardization engine that converts raw inputs into a strictly structured Brand Brief used as a single source of truth for downstream automation.
 
 Rules:
 - Return valid JSON only.
@@ -425,7 +435,7 @@ No cinematic color grading, no film grain, no anamorphic lens effects, no DSLR o
 
 #buat tab 1 output
 
-def format_creative_spec_plain(data):
+def format_brand_brief_plain(data):
 
     p = data.get("product_brand_context", {})
     a = data.get("audience_market_context", {})
@@ -467,11 +477,38 @@ def format_creative_spec_plain(data):
 # UI
 # ======================================
 
-col1, col2 = st.columns([1,4])
+header_left, header_right = st.columns([6,1])
 
-with col1:
+with header_left:
     st.image("header.png", width=220)
 
+with header_right:
+
+    st.markdown("<div style='height:30px'></div>", unsafe_allow_html=True)
+
+    st.markdown(
+        "<div style='display:flex; justify-content:flex-end;'>",
+        unsafe_allow_html=True
+    )
+
+    stop_all = st.button("⏹", help="Stop / Reset")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    if stop_all:
+        keys_to_clear = [
+            "brand_brief_json",
+            "brand_brief_plain",
+            "storyline_versions",
+            "revision_done",
+            "character_prompt_output",
+            "image_video_output"
+        ]
+
+        for k in keys_to_clear:
+            st.session_state.pop(k, None)
+
+        st.rerun()
 
 if "active_tab" not in st.session_state:
     st.session_state["active_tab"] = 0
@@ -479,13 +516,15 @@ if "active_tab" not in st.session_state:
 tab_index = st.session_state["active_tab"]
 
 tab1, tab2, tab3 = st.tabs([
-    "Product Knowledge",
+    "Brand Brief",
     "Storyline Generator",
     "Prompt Generator"
 ])
 
+
+
 # ======================================
-# TAB 1 — PRODUCT KNOWLEDGE
+# TAB 1 — BRAND BRIEF
 # ======================================
 
 with tab1:
@@ -504,15 +543,15 @@ with controls:
     audience = st.text_area("Audience")
     campaign = st.text_area("Campaign")
 
-    if st.button("Generate Creative Spec"):
+    if st.button("Generate Brand Brief"):
 
-        with st.spinner("Generating Creative Spec..."):
+        with st.spinner("Generating Brand Brief..."):
 
             content = [
                 {
                     "type": "input_text",
                     "text": f"""
-            Convert the following into standardized Creative Spec.
+            Convert the following into a standardized Brand Brief.
 
             Product Context:
             {product_desc}
@@ -573,31 +612,31 @@ with controls:
                     st.stop()
 
             # Store in session state
-            st.session_state["creative_spec_json"] = parsed
-            st.session_state["creative_spec_plain"] = format_creative_spec_plain(parsed)
+            st.session_state["brand_brief_json"] = parsed
+            st.session_state["brand_brief_plain"] = format_brand_brief_plain(parsed)
             
 with output:
     # Display section
-    if "creative_spec_json" in st.session_state:
+    if "brand_brief_json" in st.session_state:
 
         spec_tab1, spec_tab2 = st.tabs(["Plain Text", "JSON"])
 
         with spec_tab1:
             st.text_area(
-                "Creative Spec (Readable)",
-                st.session_state["creative_spec_plain"],
+                "Brand Brief (Readable)",
+                st.session_state["brand_brief_plain"],
                 height=500
             )
 
             st.download_button(
-                label="Download Creative Spec (.txt)",
-                data=txt_file(st.session_state["creative_spec_plain"]),
-                file_name="creative_spec.txt",
+                label="Download Brand Brief (.txt)",
+                data=txt_file(st.session_state["brand_brief_plain"]),
+                file_name="brand_brief.txt",
                 mime="text/plain"
             )
 
         with spec_tab2:
-            st.json(st.session_state["creative_spec_json"])
+            st.json(st.session_state["brand_brief_json"])
 
 # ======================================
 # TAB 2 — STORYLINE GENERATOR (FINAL STABLE VERSIONED)
@@ -615,7 +654,7 @@ with controls:
         </div>
         """, unsafe_allow_html=True)
 
-    product_spec = st.text_area("Product Knowledge (Copy the output from Tab 1 and paste it here)", height=150)
+    product_spec = st.text_area("Brand Brief (Copy the output from Tab 1 and paste it here)", height=150)
 
     product_image = st.file_uploader("Upload Product Image")
 
@@ -884,8 +923,8 @@ with tab3:
             height=200
         )
 
-        creative_spec_input_pg = st.text_area(
-            "Product Knowlege (or Product Size)",
+        brand_brief_input_pg = st.text_area(
+            "Brand Brief",
             height=100
         )
 
@@ -900,6 +939,7 @@ with tab3:
             "Character Design (Ethnicity, Outfit, Visual Identity)",
             placeholder="e.g. Javanese woman, pastel hijab, modern modest wear"
         )
+
         character_references = st.file_uploader(
             "Upload Character Reference Images",
             type=["png", "jpg", "jpeg"],
@@ -931,14 +971,15 @@ with tab3:
         # ======================================
 
         if generate_char:
+            st.session_state.pop("image_video_output", None)
             with st.spinner("Generating character prompts..."):
 
                 character_prompt_input = f"""
         Storyline:
         {storyline_input}
 
-        Product Creative Spec:
-        {creative_spec_input_pg}
+        Brand Brief:
+        {brand_brief_input_pg}
 
         Image Style:
         {image_style_input}
@@ -975,14 +1016,15 @@ with tab3:
                 st.session_state["character_prompt_output"] = response.output_text
 
         if generate_iv:
+            st.session_state.pop("character_prompt_output", None)
             with st.spinner("Generating image & video prompts..."):
 
                 iv_prompt_input = f"""
         Storyline:
         {storyline_input}
 
-        Product Creative Spec:
-        {creative_spec_input_pg}
+        Brand Brief:
+        {brand_brief_input_pg}
 
         Image Style:
         {image_style_input}
@@ -1141,7 +1183,7 @@ margin-top: 2px;
 
 <div class="footer">
     <div class="footer-line1">
-        Version 0.3. Currently only support Custom AI Ads (Product Creative Specs, Storyline Creation, Character Prompt Generation,
+        Version 0.3. Currently only support Custom AI Ads (Brand Brief, Storyline Creation, Character Prompt Generation,
         Image & Video Prompt Generation). Every frame is a delightful rebellion against the mundane. 
     </div>
 </div>
