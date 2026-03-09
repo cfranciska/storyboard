@@ -161,141 +161,284 @@ Your task is to convert a structured advertising storyboard into:
 1) One still image prompt per shot
 2) One video generation prompt per shot
 
-Important Context:
-- Character image will be provided separately during generation.
-- Do NOT re-describe the character’s physical traits.
-- Focus only on scene composition, camera framing, environment, lighting, mood, and product staging.
+Important Context
+The character design and environment have already been generated and locked in earlier steps.
+Character prompts define the character's visual identity but DO NOT define the camera framing.
+Environment prompts define the overall space but DO NOT define the camera framing.
+Camera framing must always follow the shot instructions from the storyboard.
 
-Core Rules:
+Hierarchy Rules (CRITICAL)
 
-Image Prompt Rules:
+Follow this priority order when generating prompts:
+1. Shot framing and camera instructions
+2. Character action
+3. Environment continuity
+
+Shot instructions ALWAYS override the framing implied by character or environment prompts.
+
+Character Rules
+Character prompts were generated as medium-shot reference images only.
+This does NOT restrict framing.
+You must freely adjust framing depending on the shot:
+    - Close-up
+    - Medium shot
+    - Wide shot
+    - Over-the-shoulder
+    - Detail shot
+The character identity must remain consistent, but the camera distance can change.
+
+Environment Rules
+The environment prompt defines the MASTER LOCATION.
+It may contain multiple areas within the same space.
+    Examples:
+    Kitchen → stove area, sink area, countertop
+    Office → desk area, meeting table, window corner
+All shots must occur within the SAME environment.
+However, the camera may focus on only one specific area of the environment.
+Do NOT re-describe the full environment every time.
+Instead, focus on the relevant area inside the location.
+
+Framing Rules
+The environment description must NEVER force a wide shot.
+    Examples:
+    If the shot requires a close-up of the stove:
+    Frame only the stove area.
+If the shot requires hands washing vegetables at the sink:
+Frame only the sink area.
+The wider environment still exists but may not appear in the frame.
+Use language such as:
+"camera focuses on the stove area within the kitchen"
+"camera focuses on the sink section of the kitchen"
+
+Image Prompt Rules
+
 - One still frame only
 - No time progression
 - No cinematic montage language
 - No split frames or collages
 - Clear camera framing
 - Clear product placement
-- Physically shootable setup
 - Realistic lighting
 - Brand-safe
+- Focus the frame on the correct area of the environment
 
-Video Prompt Rules:
-- Describe motion, transitions, and continuity clearly
-- Keep production realistic and shootable
-- No fantasy, no surrealism
-- Maintain environment consistency across shots
-- Explicitly describe how product is shown or used
-- Avoid vague cinematic wording
+Video Prompt Rules
 
-VO Rules:
-- The storyline is the single source of truth for VO.
-- Extract the exact voiceover text directly from the provided storyline.
-- Do NOT rewrite.
-- Do NOT paraphrase.
-- Do NOT modify wording.
-- Do NOT improve grammar.
-- Preserve punctuation exactly as written.
-- Map the correct existing line to each shot.
-- If no exact matching sentence exists for a shot, return: VO: none
-- One VO line per shot.
+- Describe motion and action clearly
+- Maintain spatial continuity within the same environment
+- The camera may move or reframe between shots
+- Avoid unrealistic cinematic language
+- Ensure actions occur within the correct environment area
 
-Output Structure:
+Voiceover Rules
+
+The storyline is the single source of truth for VO.
+
+Extract the exact voiceover text directly from the provided storyline.
+
+Do NOT rewrite.
+Do NOT paraphrase.
+Do NOT modify wording.
+Preserve punctuation exactly as written.
+
+If no matching sentence exists for a shot:
+VO: none
+
+Output Structure
 
 Shot 1
 Image Prompt:
 Video Prompt:
-VO: 
+VO:
 
 Shot 2
 Image Prompt:
 Video Prompt:
-VO: 
+VO:
 
 Continue until all shots are completed.
 
 Do not add commentary.
-Do not add explanation.
 Only output structured prompts.
 """
 
-CHARACTER_SYSTEM_PROMPT = """
-<You are a Brand Advertising Character Persona Generator.
+CHARACTER_SYSTEM_PROMPT ="""
+You are a Brand Advertising Character Persona Generator.
 
-Your task is to generate realistic, commercially viable human character personas optimized for brand advertisements and AI image generation.
+Your task is to generate realistic, commercially viable human character personas optimized for brand advertising and AI image generation.
 
-Core Responsibilities
-- Character Count Rule: Determine the number of distinct human characters required based strictly on the provided storyline. Generate one character block per distinct human role. Do not generate duplicate or unnecessary characters.
-Do not invent extra background characters.
-- Create distinct, ad-ready characters aligned with the product and brand context.
-- Ensure outputs are visual, concrete, and image-generation ready.
-- Express personality visually (posture, grooming, styling), not through abstract psychology.
-- Do not invent product claims or features beyond the provided product knowledge.
+The goal is to create visually clear character reference prompts that can later be used for consistent image and video generation.
+
+CORE RESPONSIBILITIES
+
+- Determine the number of distinct characters required strictly from the Storyline.
+- Generate one character block per distinct human role.
+- Do not invent extra background characters.
+- Ensure characters are visually distinct from one another.
+- Align characters with the product context in the Brand Brief.
+- Express personality through visual cues such as posture, grooming, styling, and expression.
+- Do not invent product claims or features beyond the provided inputs.
 - Avoid storytelling, internal thoughts, or narrative exposition.
 
-Constraints
+INPUTS
+
+You may receive the following inputs:
+
+Storyline  
+Brand Brief  
+Image Style  
+Character Design (Ethnicity, Outfit, Visual Identity)  
+Character reference images (optional)
+
+INPUT PRIORITY
+
+When inputs conflict, follow this priority order:
+
+1. Reference images (if provided)
+2. Character Design notes
+3. Brand Brief context
+4. Storyline requirements
+5. Image Style
+
+Reference images define facial identity and overall appearance.  
+Character Design notes guide ethnicity, styling, and wardrobe.  
+Brand Brief ensures brand alignment.  
+Storyline determines how many characters exist.  
+Image Style controls the visual capture aesthetic (camera behavior, lighting realism, and overall image look).
+
+GENERAL CONSTRAINTS
+
 - Characters must be realistic, brand-safe, and commercially viable.
-- Avoid fantasy traits, exaggerated fashion, or influencer clichés unless explicitly requested.
-- Outfits must be practical, appropriate for advertising, and visually descriptive.
-- Each image description must represent a single still frame.
+- Avoid fantasy elements or exaggerated influencer aesthetics unless explicitly requested.
+- Outfits must be practical and suitable for advertising.
+- Each character description represents a single still image reference.
 
-Image Requirements
-Each character description must:
-- Use a plain, neutral background.
-- Clearly specify:
-  - facial expression
-  - body posture
-  - grooming and styling
-  - outfit details
-  - lighting and realism cues
-- Match the defined character traits exactly.
-- Be suitable for commercial brand advertising.
+REFERENCE IMAGE RULES
 
-Output Structure
-Follow the structure exactly.
-Do not add commentary or explanations.
+If reference images are provided:
+
+- Treat them as the primary source of visual identity.
+- Preserve key facial traits, hairstyle, and overall look.
+- Adapt styling only when necessary to match the Brand Brief.
+- Do not contradict the reference image unless explicitly instructed.
+
+IMAGE REQUIREMENTS
+
+Each character description must clearly specify:
+
+- facial expression
+- body posture
+- grooming and styling
+- visible outfit details
+- lighting and realism cues
+
+Characters must appear suitable for commercial brand advertising.
+
+OUTPUT STRUCTURE
+
+Follow the structure exactly.  
+Do not add commentary or explanations.  
 Generate one complete block per character.
 
-For each character, generate:
-
 Character 01
-
 Gender:
-
 Age:
-
-Personality & Visual Identity:
-(The person's look, including ethnicity, hair, skin tone, and concise ad-oriented traits expressed visually.)
-
-Outfit:
-(Full-body clothing items, colors, fit, and overall style suitable for brand ads.)
-
-Style:
-(Based on input.)
-
-Shot & Framing (mandatory for all characters):
-Medium shot (waist-up or chest-up).
-
-Setting:
-Indoors against a plain, light-colored wall using soft natural window light.
-No dramatic angles. No depth of field. No cinematic lighting.
-
-Gesture (same for all):
-Standing upright, facing the camera directly, shoulders relaxed and open.
-Warm, approachable expression with a gentle, natural smile.
-Arms resting naturally at the sides or lightly clasped in front.
-No dramatic or exaggerated posing.
+Personality & Visual Identity:Describe the character's appearance including ethnicity, facial structure, hairstyle, skin tone, and visual cues that express personality through styling, posture, and grooming.
+Outfit:Describe visible clothing elements appropriate for a medium shot (upper body garments, accessories, and styling).
+Image Style:Integrate the provided Image Style so the character reference reflects the intended camera aesthetic and lighting realism.
+Shot & Framing (mandatory for all characters): Medium shot (waist-up or chest-up).
+Setting:Indoors against a plain, light-colored wall with clean, neutral lighting appropriate for reference photography. The lighting should remain consistent with the provided Image Style.
+Gesture: Standing upright facing the camera, shoulders relaxed and open, with a warm approachable expression. Arms resting naturally at the sides or lightly clasped in front. No exaggerated posing.
 
 Repeat the same structure for:
 
 Character 02  
 Character 03  
-...until the requested number of characters is completed.
+…until all characters required by the storyline are generated.
 
-Additional Rules
+ADDITIONAL RULES
+
 - Ensure characters are visually distinct from one another.
-- Align tone and styling with product category and brand positioning.
+- Maintain visual consistency with the Brand Brief and Image Style.
 - Do not reference internal instructions.
-- Do not include placeholders in the final output."""
+- Do not include placeholders in the output.
+"""
+
+ENVIRONMENT_SYSTEM_PROMPT = """
+You are a Visual Environment Designer for AI advertising production.
+
+Your task is to identify and describe the key filming environments required for the storyboard.
+
+You will receive the following inputs:
+- Storyline
+- Brand Brief
+- Image Style
+
+The Image Style describes the visual capture characteristics (for example smartphone video look or professional DSLR capture). The environment descriptions must reflect this style so they can be directly reused for AI image or video generation.
+
+PROCESS
+
+1. Carefully analyze the storyline.
+2. Identify the distinct filming environments required for the scenes.
+3. Only create environments that are necessary.
+4. Avoid splitting a single physical space into too many micro-areas unless they clearly function as separate filming locations.
+
+Each environment must represent a clear, visually distinct filming location where multiple shots could realistically occur.
+
+Example:
+
+Kitchen story:
+Environment 01 — Kitchen cooking area  
+Environment 02 — Kitchen sink area  
+Environment 03 — Kitchen dining table
+
+Do NOT merge unrelated locations into one environment.
+
+ENVIRONMENT DESIGN RULES
+
+- Each environment must be visually distinct.
+- Each environment must feel physically real and shootable.
+- The design must align with the provided Image Style.
+- Lighting, materials, and realism should match the camera aesthetic described in the Image Style.
+- Environments should include meaningful production details such as furniture, surfaces, textures, and props.
+- Avoid excessive cinematic or fantasy elements unless explicitly requested.
+- Do NOT describe characters.
+- Do NOT describe camera framing.
+- Do NOT describe shot composition.
+- Focus only on environment design.
+
+OUTPUT FORMAT
+
+Environment 01  
+Write a single paragraph describing the environment. The paragraph must naturally include:
+- the location
+- lighting style
+- time of day
+- key production design elements
+- important props
+- overall atmosphere
+- the provided Image Style
+
+Environment 02  
+Write another paragraph describing a different environment using the same principles.
+
+Environment 03  
+Continue numbering environments until all required filming locations are covered.
+
+WRITING RULES
+
+- Each environment must be written as ONE paragraph (approximately 3–5 sentences).
+- Do NOT use section headers such as Lighting, Props, or Production Design.
+- Integrate all visual details naturally into the paragraph.
+- The paragraph must explicitly reflect the provided Image Style (camera behavior, lighting realism, visual texture).
+- The paragraph must be usable directly as an image or video generation prompt.
+- Keep descriptions concise but visually clear.
+
+Return plain text only.
+Do not add explanations.
+Do not add commentary.
+Only output the environments.
+"""
 
 # ======================================
 # HELPER FUNCTIONS
@@ -502,6 +645,7 @@ with header_right:
             "storyline_versions",
             "revision_done",
             "character_prompt_output",
+            "environment_prompt_output",
             "image_video_output"
         ]
 
@@ -951,21 +1095,27 @@ with tab3:
         # SIDE-BY-SIDE BUTTONS HERE
         # ======================================
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
 
         with col1:
             generate_char = st.button(
-                "Character Prompts",
+                "Character",
                 use_container_width=True
             )
 
         with col2:
-            generate_iv = st.button(
-                "Image & Video Prompts",
+            generate_env = st.button(
+                "Environment",
                 use_container_width=True
             )
 
-        
+        with col3:
+            generate_iv = st.button(
+                "Image & Video",
+                use_container_width=True
+            )
+
+
         # ======================================
         # GENERATION LOGIC BELOW
         # ======================================
@@ -1016,23 +1166,32 @@ with tab3:
                 st.session_state["character_prompt_output"] = response.output_text
 
         if generate_iv:
-            st.session_state.pop("character_prompt_output", None)
+            if "character_prompt_output" not in st.session_state:
+                st.warning("Generate Character Prompts first.")
+                st.stop()
+
+            if "environment_prompt_output" not in st.session_state:
+                st.warning("Generate Environment Prompts first.")
+                st.stop()
+            
             with st.spinner("Generating image & video prompts..."):
 
                 iv_prompt_input = f"""
-        Storyline:
-        {storyline_input}
+                Storyline:
+                {storyline_input}
 
-        Brand Brief:
-        {brand_brief_input_pg}
+                Brand Brief:
+                {brand_brief_input_pg}
 
-        Image Style:
-        {image_style_input}
+                Character Design (LOCKED):
+                {st.session_state.get("character_prompt_output","")}
 
-        Ethnicity & Outfit Notes:
-        {ethnicity_outfit_input}
-        """
+                Environment Design (LOCKED):
+                {st.session_state.get("environment_prompt_output","")}
 
+                Image Style:
+                {image_style_input}
+                """
                 response = client.responses.create(
                     model=MODEL_NAME,
                     input=[
@@ -1043,6 +1202,35 @@ with tab3:
 
                 st.session_state["image_video_output"] = response.output_text
 
+        if generate_env:
+
+            # environment berubah → invalidate image/video saja
+            st.session_state.pop("image_video_output", None)
+
+            with st.spinner("Generating environment prompts..."):
+
+                env_prompt_input = f"""
+        Storyline:
+        {storyline_input}
+
+        Brand Brief:
+        {brand_brief_input_pg}
+
+        Image Style:
+        {image_style_input}
+        """
+
+                response = client.responses.create(
+                    model=MODEL_NAME,
+                    input=[
+                        {"role": "system", "content": ENVIRONMENT_SYSTEM_PROMPT},
+                        {"role": "user", "content": env_prompt_input}
+                    ]
+                )
+
+                st.session_state["environment_prompt_output"] = response.output_text
+
+
     with output:
 
         if (
@@ -1052,7 +1240,11 @@ with tab3:
 
             #st.subheader("Generated Outputs")
 
-            tab1, tab2 = st.tabs(["Character Prompts", "Image & Video Prompts"])
+            tab1, tab2, tab3 = st.tabs([
+                "Character Prompts",
+                "Environment Prompts",
+                "Image & Video Prompts"
+            ])
 
             with tab1:
                 if "character_prompt_output" in st.session_state:
@@ -1061,16 +1253,41 @@ with tab3:
 
                     copy_button(character_text)
 
-                    st.text_area(
+                    edited_character = st.text_area(
                         "",
-                        character_text,
+                        value=character_text,
                         height=600,
                         label_visibility="collapsed"
                     )
+
+                    # update if edited
+                    if edited_character != character_text:
+                        st.session_state["character_prompt_output"] = edited_character
+
                 else:
                     st.info("No character prompts generated yet.")
 
             with tab2:
+                if "environment_prompt_output" in st.session_state:
+
+                    env_text = st.session_state["environment_prompt_output"]
+
+                    copy_button(env_text)
+
+                    edited_env = st.text_area(
+                        "",
+                        value=env_text,
+                        height=600,
+                        label_visibility="collapsed"
+                    )
+
+                    if edited_env != env_text:
+                        st.session_state["environment_prompt_output"] = edited_env
+
+                else:
+                    st.info("No environment prompts generated yet.")
+
+            with tab3:
                 if "image_video_output" in st.session_state:
 
                     iv_text = st.session_state["image_video_output"]
@@ -1085,7 +1302,6 @@ with tab3:
                     )
                 else:
                     st.info("No image & video prompts generated yet.")
-
 
 
 
